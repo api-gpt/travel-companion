@@ -96,6 +96,8 @@ def oauth2_authorize(provider):
         # Store the user profile in the session
         profile = resp.json()
         session['profile'] = profile
+        
+        print(profile)
 
         return_url = session.pop('return_url', url_for('web.home'))
         return redirect(return_url)
