@@ -568,7 +568,7 @@ footer {
     right: 30rem;
     /* transform: translate(-75%, -50%); */
     text-align: center;
-    color: #000000;
+    color: white;
     /* text-shadow: 0 0 3px #000000; */
 }
 
@@ -618,7 +618,7 @@ footer {
 .profile-submit-btn {
     font-weight: bold;
     background: none;
-    color: #000000;
+    color: white;
     border: 2px solid white;
     padding: 0.5rem 1rem;
     font-size: 1.1rem;
