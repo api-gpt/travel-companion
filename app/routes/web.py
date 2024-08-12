@@ -161,7 +161,7 @@ def profile():
     try:
         p = promptServiceGetProfile()
 
-        if p is None:
+        if 'error' in p:
             return render_template('profile.html')
         else:
             return render_template('profile.html',
@@ -191,7 +191,7 @@ def profile_post():
     response = promptServiceUpdateProfile(content)
 
     try:
-        if response is None or response.status_code != 200:
+        if 'error' in response:
             return render_template('profile.html')
 
         return render_template('profile.html',
