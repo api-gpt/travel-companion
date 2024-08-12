@@ -165,12 +165,13 @@ def profile():
             return render_template('profile.html')
         else:
             return render_template('profile.html',
-                                   age=p.age,
-                                   travelStyle=p.travelStyle,
-                                   travelPriorities=p.travelPriorities,
-                                   travelAvoidances=p.travelAvoidances,
-                                   dietaryRestrictions=p.dietaryRestrictions,
-                                   accomodations=p.accomodations)
+                                   age=p.get('age'),
+                                   travelStyle=p.get('travelStyle'),
+                                   travelPriorities=p.get('travelPriorities'),
+                                   travelAvoidances=p.get('travelAvoidances'),
+                                   dietaryRestrictions=p.get(
+                                       'dietaryRestrictions'),
+                                   accomodations=p.get('accomodations'))
     except TemplateNotFound:
         abort(404)
 
@@ -313,6 +314,7 @@ def promptServiceUpdateProfile(content):
                       json=content,
                       headers=headers)
     response = r.json()
+    print(response)
     return response
 
 
@@ -328,6 +330,7 @@ def promptServiceGetProfile():
     r = requests.get(f'{promptSvcUrl()}/v1/prompt/profile',
                      headers=headers)
     response = r.json()
+    print(response)
     return response
 
 
