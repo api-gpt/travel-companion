@@ -1,3 +1,14 @@
+<!-- CS467 Online Capstone: GPT API Challenge
+Kongkom Hiranpradit, Connor Flattum, Nathan Swaim, Noah Zajicek -->
+
+<!-- Source Cited:
+MDN web docs: https://developer.mozilla.org/en-US/
+html: https://developer.mozilla.org/en-US/docs/Learn/HTML
+css: https://developer.mozilla.org/en-US/docs/Learn/CSS
+javascript: https://developer.mozilla.org/en-US/docs/Learn/JavaScript
+javascript W Schools: https://www.w3schools.com/js/js_whereto.asp -->
+
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -11,8 +22,8 @@
     <div id="notification-banner" class="notification-banner" style="display: none;">
         <p id="notification-message"></p>
         <button class="close-btn" onclick="closeNotification()">×</button>
-        <a id="notification-link" href="#" class="notification-link">View Recommendations</a>
     </div>
+    
 
     <header>
         <nav>
@@ -61,7 +72,7 @@
                                 <div class="accordion-content" id="{{ day }}">
                                     <ul>
                                         {% for event in events %}
-                                        <li onclick="updateRecommendations('{{ event.time }} - {{ event.activity }}', this.dataset.details, '{{ promptUrl }}')" data-details='{{ event | tojson | safe }}'>
+                                        <li onclick="updateRecommendations('{{ event.time }} - {{ event.activity }}', this.dataset.details)" data-details='{{ event | tojson | safe }}'>
                                             {{ event.time }} - {{ event.activity }}
                                         </li>
                                         {% endfor %}
@@ -137,7 +148,7 @@
                     </div>
                     <div class="recommendations-list">
                         <h1>Recommendations</h1>
-                        <div id="recommendation-content">
+                        <div id="recommendation-content" class="recommendation-content">
                             <p>Select an event to see recommendations.</p>
                         </div>
                     </div>
@@ -160,10 +171,9 @@
         // Retrieve the itinerary data from the script tag
         const itineraryData = JSON.parse(document.getElementById('itinerary-data').textContent);
         const weatherData = JSON.parse(document.getElementById('weather-data').textContent);
-        const promptUrl = document.getElementById('promptUrl').textContent;
         let notificationMessagesText = "";
 
-
+        // Activate accordion drop down
         function toggleAccordion(id) {
             var content = document.getElementById(id);
             if (content.style.display === "block") {
@@ -173,27 +183,59 @@
             }
         }
 
+        // change textarea data to string value
         function decodeHtmlEntities(str) {
             var txt = document.createElement('textarea');
             txt.innerHTML = str;
             return txt.value;
         }
 
-        function updateRecommendations(event, details, promptUrl) {
-            details = JSON.parse(details.replace(/&quot;/g,'"'));
+        // Update recommendations with ChatGPT recommendation
+        function updateRecommendations(event, details) {
+            // parse string details and remove unnecessary quotes.
+            details = typeof details === "string" ? JSON.parse(details.replace(/&quot;/g,'"')) : details;
 
             const recommendationContent = document.getElementById('recommendation-content');
-            recommendationContent.innerHTML = `
-                <h2>${decodeHtmlEntities(event)}</h2>
-                <p><strong>Location:</strong> ${decodeHtmlEntities(details.location)}</p>
-                <p><strong>Activity:</strong> ${decodeHtmlEntities(details.activity)}</p>
-                <p><strong>Average Duration:</strong> ${details["average duration"]} hours</p>
-                <p><strong>Cost:</strong> $${details.cost}</p>
-                <p><strong>Travel Method:</strong> ${details["travel methods"]}</p>
-                <p><strong>Nearby Food:</strong> ${details["nearby resteraunts"]}</p>
-                <p><strong>Tips:</strong> ${details.tips}</p>
-                <p><strong>Alternative Activity:</strong> ${details["nearby activity"]}</p>
-            `;
+            recommendationContent.innerHTML = ``;
+
+            const filteredItinerary = {
+                event: event,
+                details: details
+            };
+
+            // Make POST request to get-travel-recommendation route
+            fetch("/get-travel-recommendation", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ itinerary: filteredItinerary })
+            })
+            .then(response => response.json())
+            .then(data => {
+                // Display json struct of event recommendations
+                let recommendationsHtml = '';
+                const recommendations = JSON.parse(data.recommendations);
+
+                // Iterate through each event and append it in html script
+                for (const [eventTitle, eventObject] of Object.entries(recommendations)) {
+                    const eventDescription = eventObject.recommendation; 
+
+                    recommendationsHtml += `
+                        <div class="recommendation-card" onclick="handleEventClick('${eventTitle}', '${eventDescription}')">
+                            <h3>${decodeHtmlEntities(eventTitle)}</h3>
+                            <p>${decodeHtmlEntities(eventDescription)}</p>
+                        </div>
+                    `;
+                }
+                recommendationContent.innerHTML += recommendationsHtml;
+            })
+            .catch(error => console.error('Error:', error));
+        }
+        
+        // handle event click
+        function handleEventClick(eventTitle, eventDescription) {
+            console.log('Event clicked:', eventTitle, eventDescription);
         }
 
         function openLoginModal() {
@@ -219,42 +261,110 @@
             document.getElementById('notification-banner').style.display = 'none';
         }
 
-        function showNotification() {
-            const notificationBanner = document.getElementById('notification-banner');
-            const notificationMessages = document.getElementById('notification-message');
+        function normalizeTime(timeString) {
+            // Convert to 24 hour format
+            let time = timeString.toUpperCase().trim();
+            
+            // Check if it is 12 hour format for AM or PM
+            let isPM = time.includes('PM');
+            time = time.replace('AM', '').replace('PM', '').trim();
 
-            if (notificationMessages) {
-                const notificationMessage = document.createElement('p');
-                notificationMessage.innerText = notificationMessagesText;
-                notificationMessages.appendChild(notificationMessage);
+            // Convert time to a Date
+            let [hours, minutes] = time.split(':');
+            hours = parseInt(hours, 10);
+
+            // Add 12 hours for PM
+            if (isPM && hours !== 12) {
+                hours += 12;
+            }
+            if (!isPM && hours === 12) {
+                hours = 0;
+            }
+
+            // Return time as a string
+            return `${hours.toString().padStart(2, '0')}:${minutes}`;
+        }
+
+        function showNotification(notifications) {
+            const notificationBanner = document.getElementById('notification-banner');
+            const notificationMessage = document.getElementById('notification-message');
+
+            if (notificationMessage) {
+                notificationMessage.innerHTML = '';
+
+                // Iterate through all notifications and append each item
+                notifications.forEach(notificationContent => {
+                    const listItem = document.createElement('div');
+                    // Update the item display css settings
+                    listItem.style.display = 'flex';
+                    listItem.style.alignItems = 'center';
+                    listItem.style.marginBottom = '10px';
+
+                    listItem.appendChild(notificationContent);
+                    notificationMessage.appendChild(listItem);
+                });
                 notificationBanner.style.display = 'block';
+                notificationBanner.style.flexDirection = 'column';
+                notificationBanner.style.alignItems = 'flex-start';
             } else {
                 console.error('Notification messages container not found');
             }
         }
 
         function checkWeatherForDay1() {
+            // Check weather for 1 day (24 hour period)
             const day1Events = itineraryData["Day 1"];
             const weatherConditions = ["Rainy Night", "Rainy", "Stormy", "Snowy"];
+            const notifications = [];
 
+            // Iterate through each recommended event
             day1Events.forEach(event => {
-                const eventTime = event.time;
+                const eventTime = normalizeTime(event.time);
                 const eventActivity = event.activity;
 
+                // Check event against weather data
                 weatherData.forecast.forEach(hour => {
-                    if (weatherConditions.includes(hour.condition) && hour.time === eventTime) {
+                    const forecastTime = normalizeTime(hour.time);
+                    // Check if condition is bad and event overlaps
+                    if (weatherConditions.includes(hour.condition) && forecastTime === eventTime) {
                         console.log("Showing hour notification with message:", hour);
-                        notificationMessagesText += `Warning of incoming ${hour.condition} during ${hour.time} over ${eventActivity} planned.\n`;
+
+                        // Container the notification message
+                        const notificationContent = document.createElement('div');
+                        notificationContent.style.display = 'flex';
+                        notificationContent.style.alignItems = 'center';
+
+                        // Add a recommendation button
+                        const button = document.createElement('button');
+                        button.innerText = 'View Recommendations';
+                        button.className = 'notification-link';
+                        button.onclick = function () {
+                            updateRecommendations(`${event.time} - ${event.activity}`, JSON.stringify(event));
+                        };
+
+                        // Notification text
+                        const notificationText = document.createElement('span');
+                        notificationText.innerHTML = `&nbsp;Warning of incoming ${hour.condition} during ${forecastTime} over ${eventActivity} planned.`;
+
+                        // Add the button at the end of the string
+                        notificationContent.appendChild(button);
+                        notificationContent.appendChild(notificationText);
+
+                        // Add notification to list of notifications
+                        notifications.push(notificationContent);
                     }
                 });
             });
 
-            // Show all accumulated notifications
-            showNotification();
+            // Show notifications
+            if (notifications.length > 0) {
+                showNotification(notifications);
+            }
         }
 
-        // Call checkWeatherForDay1 to show notifications based on weather conditions for Day 1 events
+        // Check weather events for 1 day
         checkWeatherForDay1();
+
     </script>
 </body>
 </html>

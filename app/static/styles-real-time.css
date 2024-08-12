@@ -10,7 +10,7 @@ body {
 }
 
 header {
-    position: fixed;
+    position: absolute;
     width: 100%;
     z-index: 1000;
 }
@@ -110,7 +110,7 @@ footer {
     text-align: center;
     color: #fff;
     padding: 1rem 0;
-    position: absolute;
+    position: fixed;
     width: 100%;
     bottom: 0;
 }
@@ -259,15 +259,103 @@ footer {
     color: #fff;
     background-color: rgba(255, 255, 255, 0.284);
     width: 70%;
+    height: auto;
     height: 25rem;
     padding: 1rem;
     border-radius: 5px;
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+    max-height: 25rem;
 }
 
 .recommendations-list h1 {
     font-size: 1.5rem;
     margin-bottom: 0.5rem;
+    flex-shrink: 0;
 }
+
+.recommendation-content {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 1rem;
+    flex-grow: 1;
+    overflow-y: auto;
+}
+
+.recommendation-card {
+    background-color: #3f3f3fcc; 
+    border-radius: 5px;
+    padding: 1rem;
+    cursor: pointer; 
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    cursor: pointer; 
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+.recommendation-card:hover {
+    transform: translateY(-5px); 
+}
+
+.recommendation-card h3 {
+    font-size: 1.25rem;
+    margin-bottom: 0.5rem;
+}
+
+.recommendation-card p {
+    font-size: 0.9rem;
+    margin-bottom: 0.5rem;
+}
+
+/* Notification Banner Styles */
+.notification-banner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background-color: #016c7a; 
+    color: #ffffff;
+    padding: 1rem;
+    position: relative; 
+    top: 0;
+    width: 98.1%;
+    font-family: Arial, sans-serif;
+    z-index: 1000;
+}
+
+.notification-banner p {
+    margin-top: 0.3rem;
+    margin-bottom:1rem;
+    font-size: 16px;
+    flex-grow: 1;
+}
+
+.notification-link {
+    background: #333;
+    color: #fff;
+    border: none;
+    padding: 0.5rem 1rem;
+    cursor: pointer;
+    border-radius: 5px;
+}
+
+.notification-link:hover {
+    background-color: #3b3b3b;
+    color: #ffffff;
+}
+
+.close-btn {
+    background: none;
+    border: none;
+    color: #ffffff;
+    font-size: 20px;
+    cursor: pointer;
+    margin-right: 10rem; 
+    padding: 0 10px;
+    transition: color 0.3s;
+}
+
 
 /* The Modal (background) */
 .modal {

@@ -1,4 +1,5 @@
-from flask import Blueprint, render_template, abort, request, jsonify
+from flask import (Blueprint, render_template, abort, request, jsonify,
+                   session, url_for, redirect)
 from jinja2 import TemplateNotFound
 import requests
 import os
@@ -10,6 +11,7 @@ web_bp = Blueprint('web', __name__,
                    template_folder='templates')
 
 ERROR_MESSAGE_400 = {"Error": "The request body is invalid"}
+
 notification_update = {}
 get_itinerary_data = {}
 get_weather_data = {}
@@ -20,6 +22,8 @@ PROMPT_SVC_URL = os.getenv('PROMPT_SVC_URL')
 @web_bp.route('/', methods=['GET'])
 def home():
     try:
+        # simulate log-in as test_user_id
+        # session['id'] = 'test_user_id'
         return render_template('index.html')
     except TemplateNotFound:
         abort(404)
@@ -36,8 +40,11 @@ def plan_a_trip():
 # routed from "Get Itinerary" button (bottom-left) on Plan a Trip page
 @web_bp.route('/plan-a-trip', methods=['POST'])
 def plan_a_trip_post():
+
+    global get_itinerary_data
+
     # Get form data
-    content = request.form
+    content = request.form.to_dict()
     destination = content.get('destination')
 
     # Contact prompt-svc for trip planning
@@ -61,6 +68,9 @@ def plan_a_trip_post():
 # renders a trip by trip_id with most recent itinerary
 @web_bp.route('/plan-a-trip/<int:trip_id>', methods=['GET'])
 def plan_a_trip_get(trip_id):
+
+    global get_itinerary_data
+
     # Contact prompt-svc to retrieve trip's most recent itinerary
     gpt_response = promptServiceGetTrip(trip_id)
 
@@ -128,15 +138,31 @@ def plan_a_trip_update(trip_id):
 def recommendations():
     try:
         weather_data = generate_weather_data(get_weather_data)
-        itinerary_data_out = generate_itinerary_data(get_itinerary_data)
         return render_template('recommendations.html',
                                notification_update=notification_update,
                                weather_data=weather_data,
-                               itinerary_data=itinerary_data_out,
+                               itinerary_data=get_itinerary_data,
                                promptUrl=promptSvcUrl())
     except TemplateNotFound:
         abort(404)
 
+@web_bp.route('/get-travel-recommendation', methods=['POST'])
+def get_travel_recommendations():
+    content = request.get_json()
+
+    if not content:
+        return jsonify(ERROR_MESSAGE_400), 400
+
+    recommendations_payload = {"trip_id": user_trip_id,
+                              "content": content}
+
+
+    # Contact prompt-svc to chat trip itinerary
+    recommendations = promptServiceRecommendation(recommendations_payload)
+
+    print(recommendations['messages'])
+
+    return jsonify({'recommendations': recommendations['messages']})
 
 @web_bp.route('/login-method', methods=['GET'])
 def login_method():
@@ -187,6 +213,15 @@ def get_notification():
     return jsonify(notification_update)
 
 
+# renders history page
+@web_bp.route('/history', methods=['GET'])
+def get_history():
+
+    response = promptServiceGetHistory()
+    print("recieved response from promptServiceGetHistory")
+    return response
+
+
 ###########################################################
 #
 #  Route to use promt-svc's initial GPT request route
@@ -199,6 +234,12 @@ def get_notification():
 #
 ###########################################################
 def promptServiceInitialReq(content):
+
+    # Attach user_id to content
+    if 'id' in session:
+        content['user_id'] = session['id']
+    else:
+        content['user_id'] = None
 
     r = requests.post(f'{promptSvcUrl()}/v1/prompt/initial-trip-planning-req',
                       json=content)
@@ -224,11 +265,49 @@ def promptServiceChat(content):
     return response
 
 
+# when user chats with GPT
+def promptServiceRecommendation(content):
+
+    r = requests.post(f'{promptSvcUrl()}/v1/prompt/get-travel-recommendation',
+                      json=content)
+    response = r.json()
+    return response
+
 # get a trip by trip_id
 def promptServiceGetTrip(trip_id):
 
-    r = requests.get(f'{promptSvcUrl()}/v1/prompt/get-trip/{trip_id}')
+    # Attach user_id to content
+    if 'id' in session:
+        headers = {'Authorization': 'Bearer {}'.format(session['id'])}
+    else:
+        headers = {}
+
+    r = requests.get(f'{promptSvcUrl()}/v1/prompt/get-trip/{trip_id}',
+                     headers=headers)
     response = r.json()
+    return response
+
+
+# get history (all trips of a user)
+def promptServiceGetHistory():
+
+    # Attach user_id to content
+    if 'id' in session:
+        headers = {'Authorization': 'Bearer {}'.format(session['id'])}
+    else:
+        return redirect(url_for('web.home'))
+
+    r = requests.get(f'{promptSvcUrl()}/v1/prompt/get-trip-history',
+                     headers=headers)
+    response = r.json()
+
+    # insert URL for each response
+    for trip in response['history']:
+        trip['url'] = url_for('web.plan_a_trip_get',
+                              trip_id=trip['trip_id'],
+                              _external=True)
+
+    print(response)
     return response
 
 
