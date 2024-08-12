@@ -191,7 +191,7 @@ def profile_post():
     response = promptServiceUpdateProfile(content)
 
     try:
-        if response is None:
+        if response is None or response.status_code != 200:
             return render_template('profile.html')
 
         return render_template('profile.html',
