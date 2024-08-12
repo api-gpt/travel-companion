@@ -101,7 +101,7 @@ def oauth2_authorize(provider):
         # Store the user profile in the session
         profile = resp.json()
         session['profile'] = profile
-        
+
         # get user's 'name' and extract first and last name from it
         split_name = str.split(profile['name'], ' ')
         

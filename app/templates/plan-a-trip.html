@@ -19,7 +19,7 @@ Kongkom Hiranpradit, Connor Flattum, Nathan Swaim, Noah Zajicek -->
                 <li><a href="{{ url_for('web.home') }}">Home</a></li>
                 <li><a href="{{ url_for('web.plan_a_trip') }}">Plan a Trip</a></li>
                 <li><a href="{{ url_for('web.recommendations') }}">Live Advice</a></li>
-                <li><a href="#history">History</a></li>
+                <li><a href="{{ url_for('web.get_history') }}">History</a></li>
                 <li><a href="{{ url_for('web.profile') }}">Profile</a></li>
             </ul>
             {% if 'profile' in session %}
@@ -196,7 +196,7 @@ Kongkom Hiranpradit, Connor Flattum, Nathan Swaim, Noah Zajicek -->
 
                 // Make POST request to chat-plan-a-trip route
                 // Returns json content
-                fetch("/chat-plan-a-trip", {
+                fetch("/chat-plan-a-trip/"+{{trip_id}}, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
