@@ -9,12 +9,17 @@ from flask import (
 )
 from authlib.integrations.flask_client import OAuth
 from dotenv import load_dotenv
+from app.db.database import Database
 import secrets
 
 load_dotenv()
 
 oauth_bp = Blueprint('oauth', __name__)
 oauth = OAuth()
+database = Database()
+
+# Create user table if it doesn't exist
+database.create_user_table()
 
 
 def configure_oauth(app):
@@ -96,8 +101,25 @@ def oauth2_authorize(provider):
         # Store the user profile in the session
         profile = resp.json()
         session['profile'] = profile
+
+        # get user's 'name' and extract first and last name from it
+        split_name = str.split(profile['name'], ' ')
         
-        print(profile)
+        # Extract user data from profile
+        user_data = {
+            'provider': provider,
+            'access_token': token['access_token'],
+            'first_name': split_name[0] or profile.get('first_name', ''),
+            'last_name': split_name[1] or profile.get('last_name', ''),
+            'email': profile.get('email'),
+            'url': profile.get('html_url', ''),
+            'id': profile.get('sub') or profile.get('id')
+        }
+        
+        # Insert data into 'users' table in database and store
+        # id in session
+        user_id = database.insert_user(user_data)
+        session['id'] = user_id
 
         return_url = session.pop('return_url', url_for('web.home'))
         return redirect(return_url)
