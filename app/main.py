@@ -1,6 +1,7 @@
-from flask import Flask
-from auth.oauth import oauth_bp, configure_oauth
-from routes.web import web_bp, fetch_weather_update
+from flask import Flask, session
+from flask_session import Session
+from app.auth.oauth import oauth_bp, configure_oauth
+from app.routes.web import web_bp, fetch_weather_update
 from dotenv import load_dotenv
 import threading
 
@@ -15,7 +16,10 @@ def start_notification_thread():
 
 
 app = Flask(__name__)
-app.config.from_object('config.DevelopmentConfig')
+app.config.from_object('app.config.DevelopmentConfig')
+
+app.config['SESSION_TYPE'] = 'filesystem'
+Session(app)
 
 # Initialize OAuth2.0 providers configurations
 configure_oauth(app)
@@ -29,4 +33,4 @@ start_notification_thread()
 
 
 if __name__ == '__main__':
-    app.run(host='127.0.0.1', port=8080, debug=True)
+    app.run()
