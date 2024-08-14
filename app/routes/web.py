@@ -1,4 +1,3 @@
-
 from flask import (Blueprint, render_template, abort, request, jsonify,
                    session, url_for, redirect)
 from jinja2 import TemplateNotFound
@@ -16,6 +15,7 @@ ERROR_MESSAGE_400 = {"Error": "The request body is invalid"}
 notification_update = {}
 get_itinerary_data = {}
 get_weather_data = {}
+user_trip_id = ''
 
 PROMPT_SVC_URL = os.getenv('PROMPT_SVC_URL')
 
@@ -41,9 +41,9 @@ def plan_a_trip():
 # routed from "Get Itinerary" button (bottom-left) on Plan a Trip page
 @web_bp.route('/plan-a-trip', methods=['POST'])
 def plan_a_trip_post():
-
     global get_itinerary_data
-
+    global user_trip_id
+    
     # Get form data
     content = request.form.to_dict()
     destination = content.get('destination')
@@ -55,6 +55,8 @@ def plan_a_trip_post():
     trip_id = gpt_response['trip_id']
     gpt_message = gpt_response['gpt-message']
     itinerary_data_out = generate_itinerary_data(gpt_message)
+    get_itinerary_data = itinerary_data_out
+    user_trip_id = trip_id
 
     # Fetch weather update for the destination
     fetch_weather_update(destination)
@@ -69,8 +71,8 @@ def plan_a_trip_post():
 # renders a trip by trip_id with most recent itinerary
 @web_bp.route('/plan-a-trip/<int:trip_id>', methods=['GET'])
 def plan_a_trip_get(trip_id):
-
     global get_itinerary_data
+    global user_trip_id
 
     # Contact prompt-svc to retrieve trip's most recent itinerary
     gpt_response = promptServiceGetTrip(trip_id)
@@ -79,6 +81,8 @@ def plan_a_trip_get(trip_id):
     gpt_message = gpt_response['gpt-message']
     destination = gpt_response['destination']
     itinerary_data_out = generate_itinerary_data(gpt_message)
+    get_itinerary_data = itinerary_data_out
+    user_trip_id = trip_id
 
     # Fetch weather update for the destination
     fetch_weather_update(destination)
@@ -93,10 +97,12 @@ def plan_a_trip_get(trip_id):
 # routed from "Send" button (bottom-right) on Plan a Trip page
 @web_bp.route('/chat-plan-a-trip/<int:trip_id>', methods=['POST'])
 def plan_a_trip_chat(trip_id):
+    global user_trip_id
     content = request.get_json()
     message = content.get('message')
 
     print(f"routed to chat-plan-a-trip for trip_id: {trip_id}")
+    user_trip_id = trip_id
 
     if not message:
         return jsonify(ERROR_MESSAGE_400), 400
@@ -129,10 +135,7 @@ def plan_a_trip_update(trip_id):
     fetch_weather_update(destination)
 
     # Binds trip_id to plan-a-trip.html
-    return render_template('plan-a-trip.html',
-                           notification_update=notification_update,
-                           itinerary_data=itinerary_data_out,
-                           trip_id=trip_id)
+    return jsonify({'gpt_chat_response': itinerary_data_out})
 
 
 @web_bp.route('/recommendations', methods=['GET'])
@@ -147,6 +150,23 @@ def recommendations():
     except TemplateNotFound:
         abort(404)
 
+@web_bp.route('/get-travel-recommendation', methods=['POST'])
+def get_travel_recommendations():
+    content = request.get_json()
+
+    if not content:
+        return jsonify(ERROR_MESSAGE_400), 400
+
+    recommendations_payload = {"trip_id": user_trip_id,
+                              "content": content}
+
+
+    # Contact prompt-svc to chat trip itinerary
+    recommendations = promptServiceRecommendation(recommendations_payload)
+
+    print(recommendations['messages'])
+
+    return jsonify({'recommendations': recommendations['messages']})
 
 @web_bp.route('/login-method', methods=['GET'])
 def login_method():
@@ -263,6 +283,14 @@ def promptServiceChat(content):
     return response
 
 
+# when user chats with GPT
+def promptServiceRecommendation(content):
+
+    r = requests.post(f'{promptSvcUrl()}/v1/prompt/get-travel-recommendation',
+                      json=content)
+    response = r.json()
+    return response
+
 # get a trip by trip_id
 def promptServiceGetTrip(trip_id):
 
@@ -368,3 +396,4 @@ def generate_itinerary_data(agenda_data):
 
 # Resource(s) Used:
 # https://flask.palletsprojects.com/en/3.0.x/blueprints/
+

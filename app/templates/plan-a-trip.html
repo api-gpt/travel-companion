@@ -19,7 +19,7 @@ Kongkom Hiranpradit, Connor Flattum, Nathan Swaim, Noah Zajicek -->
                 <li><a href="{{ url_for('web.home') }}">Home</a></li>
                 <li><a href="{{ url_for('web.plan_a_trip') }}">Plan a Trip</a></li>
                 <li><a href="{{ url_for('web.recommendations') }}">Live Advice</a></li>
-                <li><a href="{{ url_for('web.get_history') }}">History</a></li>
+                <li><a href="#history">History</a></li>
                 <li><a href="{{ url_for('web.profile') }}">Profile</a></li>
             </ul>
             {% if 'profile' in session %}
@@ -220,8 +220,65 @@ Kongkom Hiranpradit, Connor Flattum, Nathan Swaim, Noah Zajicek -->
 
 
         function updateItinerary() {
-            // Logic to update the itinerary
-            alert('Update Itinerary functionality to be implemented');
+            const tripId = {{ trip_id }};
+
+            // Make POST request to update-plan-a-trip route
+            // Returns json content
+            fetch(`/update-plan-a-trip/${tripId}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+            })
+            .then(response => response.json()) 
+            .then(data => {
+                // Get itinerary-accordian
+                const itineraryContainer = document.getElementById('itinerary-accordion');
+                itineraryContainer.innerHTML = ''; // Reset HTML block
+
+                // Iterate through days and each event to create updated itinerary
+                for (const [day, events] of Object.entries(data.gpt_chat_response)) {
+                    // Add a new accordian item for each day
+                    const dayAccordion = document.createElement('div');
+                    dayAccordion.className = 'accordion-item';
+
+                    // add Day header and accordion click event
+                    const dayHeader = document.createElement('h1');
+                    dayHeader.className = 'accordion-header';
+                    dayHeader.onclick = () => toggleAccordion(day);
+                    dayHeader.innerText = day;
+
+                    // create new accordion elements
+                    const dayContent = document.createElement('div');
+                    dayContent.className = 'accordion-content';
+                    dayContent.id = day;
+                    dayContent.style.display = 'none'; 
+
+                    const eventList = document.createElement('ul');
+
+                    // Add events for each day in accordion
+                    events.forEach(event => {
+                        const eventItem = document.createElement('li');
+                        eventItem.innerText = `${event.time} - ${event.activity}`;
+                        
+                        // get event details for each event
+                        eventItem.setAttribute('data-details', JSON.stringify(event));
+                        
+                        // Attach the event listener
+                        eventItem.onclick = function() {
+                            showEventDetails(this);
+                        };
+                        // append each inner child accordion event
+                        eventList.appendChild(eventItem);
+                    });
+                    // append each day to the accordion container
+                    dayContent.appendChild(eventList);
+                    dayAccordion.appendChild(dayHeader);
+                    dayAccordion.appendChild(dayContent);
+                    itineraryContainer.appendChild(dayAccordion);
+                }
+            })
+            .catch(error => console.error('Error:', error));
         }
 
 
