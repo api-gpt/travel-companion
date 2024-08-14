@@ -159,7 +159,19 @@ def login_method():
 @web_bp.route('/profile', methods=['GET'])
 def profile():
     try:
-        return render_template('profile.html')
+        p = promptServiceGetProfile()
+
+        if p is None or 'error' in p:
+            return render_template('profile.html')
+        else:
+            return render_template('profile.html',
+                                   age=p.get('age'),
+                                   travelStyle=p.get('travelStyle'),
+                                   travelPriorities=p.get('travelPriorities'),
+                                   travelAvoidances=p.get('travelAvoidances'),
+                                   dietaryRestrictions=p.get(
+                                       'dietaryRestrictions'),
+                                   accomodations=p.get('accomodations'))
     except TemplateNotFound:
         abort(404)
 
@@ -176,11 +188,13 @@ def profile_post():
     dietaryRestrictions = content.get('dietary-restrictions')
     accomodations = content.get('accomodations')
 
-    # Save to database
-
-    # Fetch from database and reload profile
+    # Update profile
+    response = promptServiceUpdateProfile(content)
 
     try:
+        if response is None or 'error' in response:
+            return render_template('profile.html')
+
         return render_template('profile.html',
                                age=age,
                                travelStyle=travelStyle,
@@ -283,6 +297,39 @@ def promptServiceGetHistory():
                               trip_id=trip['trip_id'],
                               _external=True)
 
+    print(response)
+    return response
+
+
+# when user updates the profile
+def promptServiceUpdateProfile(content):
+
+    # Attach user_id to content
+    if 'id' in session:
+        headers = {'Authorization': 'Bearer {}'.format(session['id'])}
+    else:
+        return None
+
+    r = requests.post(f'{promptSvcUrl()}/v1/prompt/profile',
+                      json=content,
+                      headers=headers)
+    response = r.json()
+    print(response)
+    return response
+
+
+# when user gets their profile
+def promptServiceGetProfile():
+
+    # Attach user_id to content
+    if 'id' in session:
+        headers = {'Authorization': 'Bearer {}'.format(session['id'])}
+    else:
+        return None
+
+    r = requests.get(f'{promptSvcUrl()}/v1/prompt/profile',
+                     headers=headers)
+    response = r.json()
     print(response)
     return response
 

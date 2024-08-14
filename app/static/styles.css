@@ -568,7 +568,7 @@ footer {
     right: 30rem;
     /* transform: translate(-75%, -50%); */
     text-align: center;
-    color: #000000;
+    color: white;
     /* text-shadow: 0 0 3px #000000; */
 }
 
@@ -586,8 +586,8 @@ footer {
 
 .profile-form input, .profile-form textarea {
     font-weight: bold;
-    color: #ffffff;
-    background: rgba(156, 156, 156, 0.5);
+    color: white;
+    /* background: rgba(156, 156, 156, 0.5); */
     padding: 0.75rem;
     width: calc(100% - 1rem); /* Adjust for padding */
     /* padding: 10px; */
@@ -599,12 +599,12 @@ footer {
 
 .profile-form textarea::placeholder {
     font-weight: bold;
-    color: #fff; /* Change this to your desired placeholder color */
+    color: white; /* Change this to your desired placeholder color */
 }
 
 .profile-form textarea {
     font-weight: bold;
-    color: #fff;
+    color: white;
     background: rgba(156, 156, 156, 0.5);
     padding: 1rem;
     resize: vertical;
@@ -618,7 +618,7 @@ footer {
 .profile-submit-btn {
     font-weight: bold;
     background: none;
-    color: #000000;
+    color: white;
     border: 2px solid white;
     padding: 0.5rem 1rem;
     font-size: 1.1rem;
