@@ -135,10 +135,7 @@ def plan_a_trip_update(trip_id):
     fetch_weather_update(destination)
 
     # Binds trip_id to plan-a-trip.html
-    return render_template('plan-a-trip.html',
-                           notification_update=notification_update,
-                           itinerary_data=itinerary_data_out,
-                           trip_id=trip_id)
+    return jsonify({'gpt_chat_response': itinerary_data_out})
 
 
 @web_bp.route('/recommendations', methods=['GET'])
@@ -352,3 +349,4 @@ def generate_itinerary_data(agenda_data):
 
 # Resource(s) Used:
 # https://flask.palletsprojects.com/en/3.0.x/blueprints/
+
