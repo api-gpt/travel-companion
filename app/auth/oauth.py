@@ -104,7 +104,7 @@ def oauth2_authorize(provider):
 
         # get user's 'name' and extract first and last name from it
         split_name = str.split(profile['name'], ' ')
-        
+
         # Extract user data from profile
         user_data = {
             'provider': provider,
@@ -115,7 +115,7 @@ def oauth2_authorize(provider):
             'url': profile.get('html_url', ''),
             'id': profile.get('sub') or profile.get('id')
         }
-        
+
         # Insert data into 'users' table in database and store
         # id in session
         user_id = database.insert_user(user_data)
