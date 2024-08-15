@@ -22,7 +22,7 @@ class Database():
                 provider      VARCHAR(50),
                 access_token  VARCHAR(255),
                 first_name    VARCHAR(50),
-                last_name     VARCHAR(50),      
+                last_name     VARCHAR(50),
                 email         VARCHAR(255),
                 url           VARCHAR(255),
                 created_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP
