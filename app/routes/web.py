@@ -120,6 +120,7 @@ def plan_a_trip_chat(trip_id):
 # routed from "Update Itinerary" button (top of chat box) on Plan a Trip page
 @web_bp.route('/update-plan-a-trip/<int:trip_id>', methods=['POST'])
 def plan_a_trip_update(trip_id):
+    global get_itinerary_data
 
     print(f"routed to update-plan-a-trip for trip_id: {trip_id}")
 
@@ -128,11 +129,8 @@ def plan_a_trip_update(trip_id):
 
     # extract messages from response, then jsonify it
     gpt_message = gpt_response['gpt-message']
-    destination = gpt_response['destination']
     itinerary_data_out = generate_itinerary_data(gpt_message)
-
-    # weather service
-    fetch_weather_update(destination)
+    get_itinerary_data = itinerary_data_out
 
     # Binds trip_id to plan-a-trip.html
     return jsonify({'gpt_chat_response': itinerary_data_out})
